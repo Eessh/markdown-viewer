@@ -30,12 +30,9 @@ workspace "MarkdownViewer"
             "md4c/md4c.c",
             "tinyfiledialogs/tinyfiledialogs.c",
         }
-        configuration { "windows" }
+        filter { "system:windows" }
           links { "mingw32", "SDL2main", "SDL2", "SDL2_ttf", "comdlg32", "ole32" }
           libdirs { "SDL2-2.26.4/lib", "SDL2_ttf-2.20.2/lib", "C:\\msys64\\mingw64\\lib" }
-        configuration { "linux" }
-          links { "SDL2main", "SDL2", "SDL2_ttf", "m", "dl" }
-          libdirs { "SDL2-2.26.4/lib", "SDL2_ttf-2.20.2/lib" }
-        configuration { "macos" }
-          links { "SDL2main", "SDL2", "SDL2_ttf", "m", "dl" }
-          libdirs { "SDL2-2.26.4/lib", "SDL2_ttf-2.20.2/lib" }
+        filter {}
+        links { "SDL2main", "SDL2", "SDL2_ttf", "m", "dl" }
+        libdirs { "SDL2-2.26.4/lib", "SDL2_ttf-2.20.2/lib" }
