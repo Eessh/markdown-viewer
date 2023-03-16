@@ -34,3 +34,6 @@
 # Makefiles
 Makefile
 *.make
+
+bin
+obj
