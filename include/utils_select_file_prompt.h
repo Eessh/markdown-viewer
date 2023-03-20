@@ -4,7 +4,7 @@
 #pragma once
 
 #include <stdbool.h>
-#include "../SDL2_ttf-2.20.2/include/SDL_ttf.h"
+#include "../SDL2_ttf/include/SDL_ttf.h"
 
 typedef struct prompt_result {
   bool ok;

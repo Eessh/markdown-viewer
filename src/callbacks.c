@@ -1,6 +1,6 @@
 #include "../include/callbacks.h"
 #include "../include/utils_md4c.h"
-#include "../SDL2-2.26.4/include/SDL.h"
+#include "../SDL2/include/SDL.h"
 
 int enter_block_callback(MD_BLOCKTYPE block_type, void* block_detail, void* user_data) {
   SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Entering block: %s", utils_blocktype_to_string(block_type));

@@ -6,8 +6,8 @@
 #ifndef SDL_MAIN_HANDLED
 #define SDL_MAIN_HANDLED
 #endif
-#include "SDL2-2.26.4/include/SDL.h"
-#include "SDL2_ttf-2.20.2/include/SDL_ttf.h"
+#include "SDL2/include/SDL.h"
+#include "SDL2_ttf/include/SDL_ttf.h"
 #if defined(_WIN32) || defined(_WIN64) || defined(__WIN32__) || defined(__WIN64__) || defined(__WINDOWS__)
 #include <Windows.h>
 #endif

@@ -1,9 +1,9 @@
 #include <string.h>
 #include "../include/utils_select_file_prompt.h"
-#ifndef SDL_MAIN_HANDLED
-#define SDL_MAIN_HANDLED
-#endif
-#include "../SDL2-2.26.4/include/SDL.h"
+// #ifndef SDL_MAIN_HANDLED
+// #define SDL_MAIN_HANDLED
+// #endif
+#include "../SDL2/include/SDL.h"
 #include "../memsafe-boii/memsafe_boii.h"
 #include "../tinyfiledialogs/tinyfiledialogs.h"
 

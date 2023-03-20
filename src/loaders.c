@@ -1,6 +1,6 @@
 #include "../include/loaders.h"
 #include "../memsafe-boii/memsafe_boii.h"
-#include "../SDL2-2.26.4/include/SDL.h"
+#include "../SDL2/include/SDL.h"
 
 file_details* load_file(const char* file_path) {
   if (!file_path) {

@@ -8,8 +8,10 @@
 #include <assert.h>
 #include <limits.h>
 #include <time.h>
+#include "log-boii/log_boii.h"
 
-#include "SDL2-2.26.4/include/SDL.h"
+// #include <SDL2/SDL.h>
+#include "SDL2/include/SDL.h"
 
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
@@ -23,10 +25,8 @@
 #include "Nuklear/nuklear.h"
 #include "Nuklear/nuklear_sdl_renderer.h"
 
-/*
-#define WINDOW_WIDTH 1080
-#define WINDOW_HEIGHT 720
-*/
+// #define WINDOW_WIDTH 1200
+// #define WINDOW_HEIGHT 800
 
 int WINDOW_WIDTH = 1080;
 int WINDOW_HEIGHT = 720;
@@ -52,9 +52,8 @@ int WINDOW_HEIGHT = 720;
   #define INCLUDE_NODE_EDITOR
 #endif
 
-/**
 #ifdef INCLUDE_STYLE
-  #include "../../demo/common/style.c"
+  #include "Nuklear/style.c"
 #endif
 #ifdef INCLUDE_CALCULATOR
   #include "../../demo/common/calculator.c"
@@ -68,7 +67,6 @@ int WINDOW_HEIGHT = 720;
 #ifdef INCLUDE_NODE_EDITOR
   #include "../../demo/common/node_editor.c"
 #endif
-*/
 
 /* ===============================================================
  *
@@ -92,15 +90,17 @@ main(int argc, char *argv[])
     /* SDL setup */
     SDL_SetHint(SDL_HINT_VIDEO_HIGHDPI_DISABLED, "0");
     SDL_Init(SDL_INIT_VIDEO);
+    log_trace("Initialized Video Subsystem.");
 
+    log_trace("Creating window ...");
     win = SDL_CreateWindow("Demo",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN|SDL_WINDOW_ALLOW_HIGHDPI|SDL_WINDOW_RESIZABLE);
-
     if (win == NULL) {
-        SDL_Log("Error SDL_CreateWindow %s", SDL_GetError());
+        log_fatal("Error while creating window: %s", SDL_GetError());
         exit(-1);
     }
+    log_trace("Created window.");
 
     flags |= SDL_RENDERER_ACCELERATED;
     flags |= SDL_RENDERER_PRESENTVSYNC;
@@ -113,15 +113,17 @@ main(int argc, char *argv[])
     SDL_SetHint(SDL_HINT_RENDER_DRIVER, "opengles2");
 #endif
 
+    log_trace("Creating renderer ...");
     renderer = SDL_CreateRenderer(win, -1, flags);
-
     if (renderer == NULL) {
-        SDL_Log("Error SDL_CreateRenderer %s", SDL_GetError());
+        log_fatal("Error while creating renderer: %s", SDL_GetError());
         exit(-1);
     }
+    log_trace("Created renderer.");
 
     /* scale the renderer output for High-DPI displays */
     {
+      log_trace("Scaling renderer output for High-DPI displays ...");
         int render_w, render_h;
         int window_w, window_h;
         float scale_x, scale_y;
@@ -131,13 +133,21 @@ main(int argc, char *argv[])
         scale_y = (float)(render_h) / (float)(window_h);
         SDL_RenderSetScale(renderer, scale_x, scale_y);
         font_scale = scale_y;
+      log_trace("Scaling done.");
     }
 
     /* GUI */
+    log_trace("Creating context ...");
     ctx = nk_sdl_init(win, renderer);
+    if (!ctx) {
+      log_fatal("Unable to create Nuklear context.");
+      exit(-1);
+    }
+    log_trace("Created context.");
     /* Load Fonts: if none of these are loaded a default font will be used  */
     /* Load Cursor: if you uncomment cursor loading please hide the cursor */
     {
+      log_trace("Loading fonts ...");
         struct nk_font_atlas *atlas;
         struct nk_font_config config = nk_font_config(0);
         struct nk_font *font;
@@ -145,9 +155,7 @@ main(int argc, char *argv[])
         /* set up the font atlas and add desired font; note that font sizes are
          * multiplied by font_scale to produce better results at higher DPIs */
         nk_sdl_font_stash_begin(&atlas);
-        // font = nk_font_atlas_add_default(atlas, 13 * font_scale, &config);
-        font = nk_font_atlas_add_from_file(atlas, "/usr/share/fonts/TTF/OpenSans-Regular.ttf", 20 * font_scale, &config);
-        // font = nk_font_atlas_add_from_file(atlas, "/home/live/Downloads/Fonts/JetBrainsMonoNerdFont/JetBrains Mono Regular Nerd Font Complete Mono.ttf", 20 * font_scale, &config);
+        font = nk_font_atlas_add_default(atlas, 13 * font_scale, &config);
         /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/DroidSans.ttf", 14 * font_scale, &config);*/
         /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/Roboto-Regular.ttf", 16 * font_scale, &config);*/
         /*font = nk_font_atlas_add_from_file(atlas, "../../../extra_font/kenvector_future_thin.ttf", 13 * font_scale, &config);*/
@@ -161,12 +169,14 @@ main(int argc, char *argv[])
         font->handle.height /= font_scale;
         /*nk_style_load_all_cursors(ctx, atlas->cursors);*/
         nk_style_set_font(ctx, &font->handle);
+      log_trace("Loaded fonts.");
     }
 
     #ifdef INCLUDE_STYLE
     /* ease regression testing during Nuklear release process; not needed for anything else */
     #ifdef STYLE_WHITE
     set_style(ctx, THEME_WHITE);
+    log_info("Setting WHITE theme ...");
     #elif defined(STYLE_RED)
     set_style(ctx, THEME_RED);
     #elif defined(STYLE_BLUE)
@@ -183,20 +193,19 @@ main(int argc, char *argv[])
         SDL_Event evt;
         nk_input_begin(ctx);
         if (SDL_WaitEvent(&evt)) {
+        // while (SDL_PollEvent(&evt)) {
             if (evt.type == SDL_QUIT) goto cleanup;
-            else if (evt.type == SDL_WINDOWEVENT && evt.window.event == SDL_WINDOWEVENT_RESIZED) {
+            if (evt.type == SDL_WINDOWEVENT && evt.window.event == SDL_WINDOWEVENT_RESIZED) {
               WINDOW_WIDTH = evt.window.data1;
               WINDOW_HEIGHT = evt.window.data2;
-              nk_sdl_handle_event(&evt);
             }
-            else nk_sdl_handle_event(&evt);
+            nk_sdl_handle_event(&evt);
         }
         nk_input_end(ctx);
 
         /* GUI */
-        if (nk_begin(ctx, "Demo", nk_rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT),
-            0
-            ))
+        // if (nk_begin(ctx, "Demo", nk_rect(50, 50, 230, 250),
+        if (nk_begin(ctx, "Demo", nk_rect(0, 0, WINDOW_WIDTH, WINDOW_HEIGHT), 0))
         {
             enum {EASY, HARD};
             static int op = EASY;
@@ -205,95 +214,47 @@ main(int argc, char *argv[])
             nk_layout_row_static(ctx, 30, 80, 1);
             if (nk_button_label(ctx, "button"))
                 fprintf(stdout, "button pressed\n");
-            if (nk_button_label(ctx, "hehe"))
-                fprintf(stdout, "hehe pressed\n");
-            if (nk_button_label(ctx, "boii"))
-                fprintf(stdout, "boii pressed\n");
-            int val=2;
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "•Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
-            nk_labelf(ctx, NK_TEXT_ALIGN_LEFT, "Heheboii: %d", val);
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
+            nk_button_label(ctx, "button");
             nk_layout_row_dynamic(ctx, 30, 2);
             if (nk_option_label(ctx, "easy", op == EASY)) op = EASY;
             if (nk_option_label(ctx, "hard", op == HARD)) op = HARD;
@@ -315,6 +276,21 @@ main(int argc, char *argv[])
             }
         }
         nk_end(ctx);
+
+        /* -------------- EXAMPLES ---------------- */
+        #ifdef INCLUDE_CALCULATOR
+          calculator(ctx);
+        #endif
+        #ifdef INCLUDE_CANVAS
+        canvas(ctx);
+        #endif
+        #ifdef INCLUDE_OVERVIEW
+          overview(ctx);
+        #endif
+        #ifdef INCLUDE_NODE_EDITOR
+          node_editor(ctx);
+        #endif
+        /* ----------------------------------------- */
 
         SDL_SetRenderDrawColor(renderer, bg.r * 255, bg.g * 255, bg.b * 255, bg.a * 255);
         SDL_RenderClear(renderer);

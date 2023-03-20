@@ -1,6 +1,6 @@
 #include "../include/utils_md4c.h"
 #include "../memsafe-boii/memsafe_boii.h"
-#include "../SDL2-2.26.4/include/SDL.h"
+#include "../SDL2/include/SDL.h"
 #include "../include/callbacks.h"
 
 const char* utils_blocktype_to_string(MD_BLOCKTYPE block_type) {
