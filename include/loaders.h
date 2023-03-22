@@ -5,7 +5,8 @@
 
 #include <stdio.h>
 
-typedef struct file_details {
+typedef struct file_details
+{
   char* content;
   unsigned long long length;
 } file_details;

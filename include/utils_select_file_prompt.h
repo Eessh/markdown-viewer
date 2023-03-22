@@ -6,9 +6,11 @@
 #include <stdbool.h>
 #include "../SDL2_ttf/include/SDL_ttf.h"
 
-typedef struct prompt_result {
+typedef struct prompt_result
+{
   bool ok;
-  union {
+  union
+  {
     char* file_path;
     const char* error_message;
   } data;
